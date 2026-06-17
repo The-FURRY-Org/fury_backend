@@ -1,0 +1,7 @@
+node_modules/
+.env
+npm-debug.log*
+uploads/pickup-photos/*
+uploads/proof-photos/*
+!uploads/pickup-photos/.gitkeep
+!uploads/proof-photos/.gitkeep
