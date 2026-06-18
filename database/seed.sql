@@ -48,12 +48,14 @@ INSERT INTO collection_requests
 (4, 8, 4, 1, 'Food waste from home compound.', 'urgent', 90, 'completed', NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 6 DAY),
 (5, 9, 5, 6, 'School bins full after sports day.', 'urgent', 100, 'cancelled', NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 4 DAY),
 (6, 10, 6, 7, 'Clinic hazardous waste ready for special pickup.', 'urgent', 85, 'pending', NOW() - INTERVAL 3 HOUR, NULL),
-(7, 11, 7, 5, 'Glass waste from tenants.', 'normal', 65, 'pending', NOW() - INTERVAL 5 HOUR, NULL),
+(7, 11, 7, 5, 'Glass waste from tenants.', 'normal', 65, 'completed', NOW() - INTERVAL 5 HOUR, NOW() - INTERVAL 4 HOUR),
 (8, 7, 3, 4, 'Metal scraps need collection.', 'normal', 60, 'accepted', NOW() - INTERVAL 4 DAY, NULL),
 (9, 8, 4, 6, 'Mixed home waste.', 'normal', 75, 'completed', NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 11 DAY),
 (10, 9, 5, 3, 'Paper waste after exams.', 'normal', 55, 'pending', NOW() - INTERVAL 1 HOUR, NULL),
 (11, 10, 6, 6, 'General clinic waste bin is full.', 'normal', 80, 'cancelled', NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 9 DAY),
-(12, 11, 7, 2, 'Plastic sacks from apartment tenants.', 'urgent', 88, 'completed', NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 17 DAY);
+(12, 11, 7, 2, 'Plastic sacks from apartment tenants.', 'urgent', 88, 'completed', NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 17 DAY),
+(13, 11, 7, 1, 'Kitchen and apartment waste needs pickup.', 'urgent', 90, 'pending', NOW() - INTERVAL 5 HOUR, NULL),
+(14, 11, 7, 4, 'Metal scraps collected from tenants.', 'normal', 70, 'pending', NOW() - INTERVAL 2 HOUR, NULL);
 
 INSERT INTO collection_assignments
 (id, collection_request_id, collector_id, status, collection_notes, cancellation_reason, waste_quantity_collected, assigned_at, completed_at) VALUES
