@@ -65,6 +65,23 @@ const login = async (req, res) => {
       return res.status(403).json({ message: "This account is not active" });
     }
 
+    try {
+      await pool.query("UPDATE users SET last_login = NOW() WHERE id = ?", [user.id]);
+    } catch (loginError) {
+      console.error("Failed to update last login", loginError);
+    }
+
+    if (user.role === "driver") {
+      try {
+        await pool.query(
+          "INSERT INTO audit_logs (user_id, action, details) VALUES (?, ?, ?)",
+          [user.id, "collector_login", JSON.stringify({ email: user.email, role: user.role })]
+        );
+      } catch (logError) {
+        console.error("Failed to log collector login", logError);
+      }
+    }
+
     delete user.password;
     res.json({ user, token: createToken(user) });
   } catch (error) {

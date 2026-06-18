@@ -11,7 +11,8 @@ CREATE TABLE users (
   role ENUM('admin', 'customer', 'driver', 'manager') NOT NULL DEFAULT 'customer',
   status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  last_login TIMESTAMP NULL
 );
 
 CREATE TABLE customer_locations (

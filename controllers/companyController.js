@@ -53,7 +53,7 @@ const getCompanyCollectors = async (req, res) => {
   if (!companyId) return res.json({ collectors: [] });
 
   const [collectors] = await pool.query(
-    `SELECT DISTINCT u.id, u.full_name, u.email, u.phone, u.status
+    `SELECT DISTINCT u.id, u.full_name, u.email, u.phone, u.status, u.last_login
      FROM users u
      JOIN trucks t ON t.driver_id = u.id
      WHERE t.company_id = ? AND u.role = 'driver'
@@ -84,11 +84,11 @@ const getCompanyCustomers = async (req, res) => {
 const getCompanyDashboard = async (req, res) => {
   const companyId = await getManagerCompanyId(req.user.id);
   if (!companyId) {
-    return res.json({ collectors: [], customers: [], collector_count: 0, customer_count: 0 });
+    return res.json({ collectors: [], customers: [], collector_count: 0, customer_count: 0, collector_logins: [] });
   }
 
   const [collectors] = await pool.query(
-    `SELECT DISTINCT u.id, u.full_name, u.email, u.phone, u.status
+    `SELECT DISTINCT u.id, u.full_name, u.email, u.phone, u.status, u.last_login
      FROM users u
      JOIN trucks t ON t.driver_id = u.id
      WHERE t.company_id = ? AND u.role = 'driver'`,
@@ -104,12 +104,42 @@ const getCompanyDashboard = async (req, res) => {
     [companyId]
   );
 
+  const [collectorLogins] = await pool.query(
+    `SELECT al.id, al.user_id, u.full_name, u.email, al.details, al.created_at
+     FROM audit_logs al
+     JOIN users u ON u.id = al.user_id
+     JOIN trucks t ON t.driver_id = u.id
+     WHERE al.action = 'collector_login' AND t.company_id = ?
+     ORDER BY al.created_at DESC
+     LIMIT 20`,
+    [companyId]
+  );
+
   res.json({
     collectors,
     collector_count: collectors.length,
     customers,
-    customer_count: customers.length
+    customer_count: customers.length,
+    collector_logins: collectorLogins
   });
+};
+
+const getCollectorLoginEvents = async (req, res) => {
+  const companyId = await getManagerCompanyId(req.user.id);
+  if (!companyId) return res.json({ logins: [] });
+
+  const [logins] = await pool.query(
+    `SELECT al.id, al.user_id, u.full_name, u.email, al.details, al.created_at
+     FROM audit_logs al
+     JOIN users u ON u.id = al.user_id
+     JOIN trucks t ON t.driver_id = u.id
+     WHERE al.action = 'collector_login' AND t.company_id = ?
+     ORDER BY al.created_at DESC
+     LIMIT 50`,
+    [companyId]
+  );
+
+  res.json({ logins });
 };
 
 const deleteDriver = async (req, res) => {
@@ -147,4 +177,4 @@ const deleteDriver = async (req, res) => {
   res.json({ message: "Collector deleted" });
 };
 
-module.exports = { createCompany, getMyCompany, updateCompany, getCompanyCollectors, getCompanyCustomers, getCompanyDashboard, deleteDriver };
+module.exports = { createCompany, getMyCompany, updateCompany, getCompanyCollectors, getCompanyCustomers, getCompanyDashboard, getCollectorLoginEvents, deleteDriver };
