@@ -13,14 +13,18 @@ const createToken = (user) => {
 const register = async (req, res) => {
   try {
     const { full_name, email, phone, password, role = "customer" } = req.body;
-    const allowedRoles = ["admin", "customer", "driver", "manager"];
+    const allowedRoles = ["customer", "driver"];
 
     if (!full_name || !email || !password) {
       return res.status(400).json({ message: "Full name, email, and password are required" });
     }
 
+    if (role === "manager") {
+      return res.status(403).json({ message: "Manager accounts must be created by an admin" });
+    }
+
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ message: "Invalid user role" });
+      return res.status(400).json({ message: "Public signup only supports customer or collector accounts" });
     }
 
     const [existingUsers] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);

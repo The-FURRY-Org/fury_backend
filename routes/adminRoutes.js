@@ -5,7 +5,8 @@ const {
   getPickups,
   getCompanies,
   getTrucks,
-  updateUserStatus
+  updateUserStatus,
+  createUser
 } = require("../controllers/adminController");
 const { protect } = require("../middleware/authMiddleware");
 const { allowRoles } = require("../middleware/roleMiddleware");
@@ -15,6 +16,7 @@ const router = express.Router();
 router.use(protect, allowRoles("admin"));
 
 router.get("/stats", getStats);
+router.post("/users", createUser);
 router.get("/users", getUsers);
 router.get("/pickups", getPickups);
 router.get("/companies", getCompanies);

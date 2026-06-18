@@ -1,3 +1,4 @@
+const bcrypt = require("bcrypt");
 const pool = require("../config/db");
 
 const getStats = async (req, res) => {
@@ -74,4 +75,37 @@ const updateUserStatus = async (req, res) => {
   res.json({ message: "User status updated" });
 };
 
-module.exports = { getStats, getUsers, getPickups, getCompanies, getTrucks, updateUserStatus };
+const createUser = async (req, res) => {
+  try {
+    const { full_name, email, phone, password, role = "manager", status = "active" } = req.body;
+    const allowedRoles = ["manager", "driver", "customer"];
+
+    if (!full_name || !email || !password || !role) {
+      return res.status(400).json({ message: "Full name, email, password, and role are required" });
+    }
+
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid role for user creation" });
+    }
+
+    const [existingUsers] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
+    if (existingUsers.length) {
+      return res.status(409).json({ message: "Email is already registered" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const [result] = await pool.query(
+      "INSERT INTO users (full_name, email, phone, password, role, status) VALUES (?, ?, ?, ?, ?, ?)",
+      [full_name, email, phone || null, hashedPassword, role, status]
+    );
+
+    res.status(201).json({
+      message: "User created",
+      user: { id: result.insertId, full_name, email, phone, role, status }
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Could not create user", error: error.message });
+  }
+};
+
+module.exports = { getStats, getUsers, getPickups, getCompanies, getTrucks, updateUserStatus, createUser };

@@ -1,5 +1,10 @@
 const pool = require("../config/db");
 
+const getManagerCompanyId = async (managerId) => {
+  const [companies] = await pool.query("SELECT id FROM waste_companies WHERE manager_id = ?", [managerId]);
+  return companies[0]?.id;
+};
+
 const createCompany = async (req, res) => {
   try {
     const { company_name, phone, email, district, address } = req.body;
@@ -43,4 +48,103 @@ const updateCompany = async (req, res) => {
   res.json({ message: "Company updated" });
 };
 
-module.exports = { createCompany, getMyCompany, updateCompany };
+const getCompanyCollectors = async (req, res) => {
+  const companyId = await getManagerCompanyId(req.user.id);
+  if (!companyId) return res.json({ collectors: [] });
+
+  const [collectors] = await pool.query(
+    `SELECT DISTINCT u.id, u.full_name, u.email, u.phone, u.status
+     FROM users u
+     JOIN trucks t ON t.driver_id = u.id
+     WHERE t.company_id = ? AND u.role = 'driver'
+     ORDER BY u.full_name ASC`,
+    [companyId]
+  );
+
+  res.json({ collectors, collector_count: collectors.length });
+};
+
+const getCompanyCustomers = async (req, res) => {
+  const companyId = await getManagerCompanyId(req.user.id);
+  if (!companyId) return res.json({ customers: [] });
+
+  const [customers] = await pool.query(
+    `SELECT DISTINCT u.id, u.full_name, u.email, u.phone, u.status
+     FROM users u
+     JOIN pickup_requests pr ON pr.customer_id = u.id
+     JOIN pickup_assignments pa ON pa.pickup_request_id = pr.id
+     WHERE pa.company_id = ? AND u.role = 'customer'
+     ORDER BY u.full_name ASC`,
+    [companyId]
+  );
+
+  res.json({ customers, customer_count: customers.length });
+};
+
+const getCompanyDashboard = async (req, res) => {
+  const companyId = await getManagerCompanyId(req.user.id);
+  if (!companyId) {
+    return res.json({ collectors: [], customers: [], collector_count: 0, customer_count: 0 });
+  }
+
+  const [collectors] = await pool.query(
+    `SELECT DISTINCT u.id, u.full_name, u.email, u.phone, u.status
+     FROM users u
+     JOIN trucks t ON t.driver_id = u.id
+     WHERE t.company_id = ? AND u.role = 'driver'`,
+    [companyId]
+  );
+
+  const [customers] = await pool.query(
+    `SELECT DISTINCT u.id, u.full_name, u.email, u.phone, u.status
+     FROM users u
+     JOIN pickup_requests pr ON pr.customer_id = u.id
+     JOIN pickup_assignments pa ON pa.pickup_request_id = pr.id
+     WHERE pa.company_id = ? AND u.role = 'customer'`,
+    [companyId]
+  );
+
+  res.json({
+    collectors,
+    collector_count: collectors.length,
+    customers,
+    customer_count: customers.length
+  });
+};
+
+const deleteDriver = async (req, res) => {
+  const companyId = await getManagerCompanyId(req.user.id);
+  if (!companyId) {
+    return res.status(400).json({ message: "You must create a company profile before deleting collectors" });
+  }
+
+  const driverId = req.params.id;
+  const [drivers] = await pool.query(
+    `SELECT u.id
+     FROM users u
+     JOIN trucks t ON t.driver_id = u.id
+     WHERE u.id = ? AND u.role = 'driver' AND t.company_id = ?`,
+    [driverId, companyId]
+  );
+
+  if (!drivers.length) {
+    return res.status(404).json({ message: "Collector not found or not assigned to your company" });
+  }
+
+  const [assignments] = await pool.query(
+    `SELECT id FROM pickup_assignments WHERE driver_id = ? AND status IN ('assigned', 'on_the_way')`,
+    [driverId]
+  );
+  if (assignments.length) {
+    return res.status(409).json({ message: "Collector cannot be deleted while they have active pickup assignments" });
+  }
+
+  const [result] = await pool.query("DELETE FROM users WHERE id = ? AND role = 'driver'", [driverId]);
+  if (!result.affectedRows) {
+    return res.status(404).json({ message: "Collector not found" });
+  }
+
+  res.json({ message: "Collector deleted" });
+};
+
+module.exports = { createCompany, getMyCompany, updateCompany, getCompanyCollectors, getCompanyCustomers, getCompanyDashboard, deleteDriver };
