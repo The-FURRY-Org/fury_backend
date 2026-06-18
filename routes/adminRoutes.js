@@ -2,11 +2,11 @@ const express = require("express");
 const {
   getStats,
   getUsers,
-  getPickups,
-  getCompanies,
-  getTrucks,
+  getCollections,
   updateUserStatus,
-  createUser
+  createUser,
+  verifyCollector,
+  getCollectorProfiles
 } = require("../controllers/adminController");
 const { protect } = require("../middleware/authMiddleware");
 const { allowRoles } = require("../middleware/roleMiddleware");
@@ -18,9 +18,9 @@ router.use(protect, allowRoles("admin"));
 router.get("/stats", getStats);
 router.post("/users", createUser);
 router.get("/users", getUsers);
-router.get("/pickups", getPickups);
-router.get("/companies", getCompanies);
-router.get("/trucks", getTrucks);
+router.get("/collections", getCollections);
+router.get("/collectors/profiles", getCollectorProfiles);
+router.put("/collectors/:collector_id/verify", verifyCollector);
 router.put("/users/:id/status", updateUserStatus);
 
 module.exports = router;

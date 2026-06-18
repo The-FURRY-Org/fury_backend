@@ -12,19 +12,19 @@ const createToken = (user) => {
 
 const register = async (req, res) => {
   try {
-    const { full_name, email, phone, password, role = "customer" } = req.body;
-    const allowedRoles = ["customer", "driver"];
+    const { full_name, email, phone, password, role = "client" } = req.body;
+    const allowedRoles = ["client", "collector"];
 
     if (!full_name || !email || !password) {
       return res.status(400).json({ message: "Full name, email, and password are required" });
     }
 
-    if (role === "manager") {
-      return res.status(403).json({ message: "Manager accounts must be created by an admin" });
+    if (role === "admin") {
+      return res.status(403).json({ message: "Admin accounts must be created by an administrator" });
     }
 
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ message: "Public signup only supports customer or collector accounts" });
+      return res.status(400).json({ message: "Public signup only supports client or collector accounts" });
     }
 
     const [existingUsers] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
@@ -38,6 +38,18 @@ const register = async (req, res) => {
       "INSERT INTO users (full_name, email, phone, password, role) VALUES (?, ?, ?, ?, ?)",
       [full_name, email, phone || null, hashedPassword, role]
     );
+
+    // Create collector profile if registering as collector
+    if (role === "collector") {
+      try {
+        await pool.query(
+          "INSERT INTO collector_profiles (user_id, is_verified) VALUES (?, ?)",
+          [result.insertId, false]
+        );
+      } catch (profileError) {
+        console.error("Failed to create collector profile", profileError);
+      }
+    }
 
     const user = { id: result.insertId, full_name, email, phone, role, status: "active" };
     res.status(201).json({ user, token: createToken(user) });
@@ -71,7 +83,7 @@ const login = async (req, res) => {
       console.error("Failed to update last login", loginError);
     }
 
-    if (user.role === "driver") {
+    if (user.role === "collector") {
       try {
         await pool.query(
           "INSERT INTO audit_logs (user_id, action, details) VALUES (?, ?, ?)",

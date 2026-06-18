@@ -2,26 +2,30 @@ const bcrypt = require("bcrypt");
 const pool = require("../config/db");
 
 const getStats = async (req, res) => {
-  const [[pickupStats]] = await pool.query(
-    `SELECT
-      COUNT(*) AS total_pickup_requests,
-      SUM(status = 'pending') AS pending_pickups,
-      SUM(status = 'collected') AS completed_pickups,
-      SUM(status = 'failed') AS failed_pickups
-     FROM pickup_requests`
-  );
+  try {
+    const [[collectionStats]] = await pool.query(
+      `SELECT
+        COUNT(*) AS total_collection_requests,
+        SUM(status = 'pending') AS pending_requests,
+        SUM(status = 'completed') AS completed_collections,
+        SUM(status = 'cancelled') AS cancelled_requests
+       FROM collection_requests`
+    );
 
-  const [[truckStats]] = await pool.query("SELECT COUNT(*) AS active_trucks FROM trucks WHERE status = 'active'");
-  const [[driverStats]] = await pool.query("SELECT COUNT(*) AS active_drivers FROM users WHERE role = 'driver' AND status = 'active'");
-  const [[wasteStats]] = await pool.query(
-    `SELECT COALESCE(SUM(waste_quantity_collected), 0) AS waste_collected_this_month
-     FROM pickup_assignments
-     WHERE status = 'collected'
-       AND MONTH(completed_at) = MONTH(CURRENT_DATE())
-       AND YEAR(completed_at) = YEAR(CURRENT_DATE())`
-  );
+    const [[collectorStats]] = await pool.query("SELECT COUNT(*) AS active_collectors FROM users WHERE role = 'collector' AND status = 'active'");
+    const [[clientStats]] = await pool.query("SELECT COUNT(*) AS active_clients FROM users WHERE role = 'client' AND status = 'active'");
+    const [[wasteStats]] = await pool.query(
+      `SELECT COALESCE(SUM(waste_quantity_collected), 0) AS waste_collected_this_month
+       FROM collection_assignments
+       WHERE status = 'completed'
+         AND MONTH(completed_at) = MONTH(CURRENT_DATE())
+         AND YEAR(completed_at) = YEAR(CURRENT_DATE())`
+    );
 
-  res.json({ ...pickupStats, ...truckStats, ...driverStats, ...wasteStats });
+    res.json({ ...collectionStats, ...collectorStats, ...clientStats, ...wasteStats });
+  } catch (error) {
+    res.status(500).json({ message: "Could not fetch stats", error: error.message });
+  }
 };
 
 const getUsers = async (req, res) => {
@@ -31,37 +35,20 @@ const getUsers = async (req, res) => {
   res.json(users);
 };
 
-const getPickups = async (req, res) => {
-  const [pickups] = await pool.query(
-    `SELECT pr.*, u.full_name AS customer_name, wc.name AS waste_type, cl.location_name, cl.district
-     FROM pickup_requests pr
-     JOIN users u ON u.id = pr.customer_id
-     JOIN waste_categories wc ON wc.id = pr.waste_category_id
-     JOIN customer_locations cl ON cl.id = pr.location_id
-     ORDER BY pr.created_at DESC`
-  );
-  res.json(pickups);
-};
-
-const getCompanies = async (req, res) => {
-  const [companies] = await pool.query(
-    `SELECT wc.*, u.full_name AS manager_name
-     FROM waste_companies wc
-     JOIN users u ON u.id = wc.manager_id
-     ORDER BY wc.created_at DESC`
-  );
-  res.json(companies);
-};
-
-const getTrucks = async (req, res) => {
-  const [trucks] = await pool.query(
-    `SELECT t.*, wc.company_name, u.full_name AS driver_name
-     FROM trucks t
-     JOIN waste_companies wc ON wc.id = t.company_id
-     LEFT JOIN users u ON u.id = t.driver_id
-     ORDER BY t.created_at DESC`
-  );
-  res.json(trucks);
+const getCollections = async (req, res) => {
+  try {
+    const [collections] = await pool.query(
+      `SELECT cr.*, u.full_name AS client_name, wc.name AS waste_type, cl.location_name, cl.district
+       FROM collection_requests cr
+       JOIN users u ON u.id = cr.client_id
+       JOIN waste_categories wc ON wc.id = cr.waste_category_id
+       JOIN customer_locations cl ON cl.id = cr.location_id
+       ORDER BY cr.created_at DESC`
+    );
+    res.json(collections);
+  } catch (error) {
+    res.status(500).json({ message: "Could not fetch collections", error: error.message });
+  }
 };
 
 const updateUserStatus = async (req, res) => {
@@ -77,15 +64,15 @@ const updateUserStatus = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { full_name, email, phone, password, role = "manager", status = "active" } = req.body;
-    const allowedRoles = ["manager", "driver", "customer"];
+    const { full_name, email, phone, password, role = "client", status = "active" } = req.body;
+    const allowedRoles = ["admin", "client", "collector"];
 
     if (!full_name || !email || !password || !role) {
       return res.status(400).json({ message: "Full name, email, password, and role are required" });
     }
 
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ message: "Invalid role for user creation" });
+      return res.status(400).json({ message: "Invalid role. Must be 'admin', 'client', or 'collector'" });
     }
 
     const [existingUsers] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
@@ -99,6 +86,18 @@ const createUser = async (req, res) => {
       [full_name, email, phone || null, hashedPassword, role, status]
     );
 
+    // Create collector profile if creating as collector
+    if (role === "collector") {
+      try {
+        await pool.query(
+          "INSERT INTO collector_profiles (user_id, is_verified) VALUES (?, ?)",
+          [result.insertId, false]
+        );
+      } catch (profileError) {
+        console.error("Failed to create collector profile", profileError);
+      }
+    }
+
     res.status(201).json({
       message: "User created",
       user: { id: result.insertId, full_name, email, phone, role, status }
@@ -108,4 +107,42 @@ const createUser = async (req, res) => {
   }
 };
 
-module.exports = { getStats, getUsers, getPickups, getCompanies, getTrucks, updateUserStatus, createUser };
+const verifyCollector = async (req, res) => {
+  try {
+    const { collector_id } = req.params;
+    const { is_verified } = req.body;
+
+    if (typeof is_verified !== "boolean") {
+      return res.status(400).json({ message: "is_verified must be true or false" });
+    }
+
+    const [result] = await pool.query(
+      "UPDATE collector_profiles SET is_verified = ? WHERE user_id = ?",
+      [is_verified, collector_id]
+    );
+
+    if (!result.affectedRows) {
+      return res.status(404).json({ message: "Collector not found" });
+    }
+
+    res.json({ message: `Collector verification status updated to ${is_verified}` });
+  } catch (error) {
+    res.status(500).json({ message: "Could not verify collector", error: error.message });
+  }
+};
+
+const getCollectorProfiles = async (req, res) => {
+  try {
+    const [profiles] = await pool.query(
+      `SELECT cp.*, u.full_name, u.email, u.phone, u.status
+       FROM collector_profiles cp
+       JOIN users u ON u.id = cp.user_id
+       ORDER BY cp.is_verified DESC, cp.rating DESC`
+    );
+    res.json(profiles);
+  } catch (error) {
+    res.status(500).json({ message: "Could not fetch collector profiles", error: error.message });
+  }
+};
+
+module.exports = { getStats, getUsers, getCollections, updateUserStatus, createUser, verifyCollector, getCollectorProfiles };

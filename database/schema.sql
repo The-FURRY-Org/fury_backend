@@ -8,7 +8,7 @@ CREATE TABLE users (
   email VARCHAR(120) NOT NULL UNIQUE,
   phone VARCHAR(30),
   password VARCHAR(255) NOT NULL,
-  role ENUM('admin', 'customer', 'driver', 'manager') NOT NULL DEFAULT 'customer',
+  role ENUM('admin', 'client', 'collector') NOT NULL DEFAULT 'client',
   status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -32,31 +32,17 @@ CREATE TABLE customer_locations (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE waste_companies (
+CREATE TABLE collector_profiles (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  manager_id INT NOT NULL,
-  company_name VARCHAR(150) NOT NULL,
-  phone VARCHAR(30),
-  email VARCHAR(120),
-  district VARCHAR(80) NOT NULL,
-  address TEXT,
-  status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+  user_id INT NOT NULL UNIQUE,
+  bio TEXT,
+  service_area VARCHAR(255),
+  is_verified BOOLEAN DEFAULT FALSE,
+  rating DECIMAL(3, 2) DEFAULT 0,
+  total_collections INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (manager_id) REFERENCES users(id)
-);
-
-CREATE TABLE trucks (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  company_id INT NOT NULL,
-  truck_number_plate VARCHAR(40) NOT NULL UNIQUE,
-  truck_capacity DECIMAL(10, 2),
-  driver_id INT,
-  status ENUM('active', 'maintenance', 'inactive') NOT NULL DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (company_id) REFERENCES waste_companies(id) ON DELETE CASCADE,
-  FOREIGN KEY (driver_id) REFERENCES users(id) ON DELETE SET NULL
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE waste_categories (
@@ -68,57 +54,51 @@ CREATE TABLE waste_categories (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE pickup_requests (
+CREATE TABLE collection_requests (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  customer_id INT NOT NULL,
+  client_id INT NOT NULL,
   location_id INT NOT NULL,
   waste_category_id INT NOT NULL,
   description TEXT,
   photo VARCHAR(255),
   urgency ENUM('normal', 'urgent') NOT NULL DEFAULT 'normal',
   estimated_bin_level INT NOT NULL,
-  status ENUM('pending', 'assigned', 'on_the_way', 'collected', 'failed', 'cancelled') NOT NULL DEFAULT 'pending',
+  status ENUM('pending', 'accepted', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
   requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (customer_id) REFERENCES users(id),
+  FOREIGN KEY (client_id) REFERENCES users(id),
   FOREIGN KEY (location_id) REFERENCES customer_locations(id),
   FOREIGN KEY (waste_category_id) REFERENCES waste_categories(id)
 );
 
-CREATE TABLE pickup_assignments (
+CREATE TABLE collection_assignments (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  pickup_request_id INT NOT NULL,
-  company_id INT NOT NULL,
-  truck_id INT NOT NULL,
-  driver_id INT NOT NULL,
-  assigned_by INT NOT NULL,
-  status ENUM('assigned', 'on_the_way', 'collected', 'failed') NOT NULL DEFAULT 'assigned',
+  collection_request_id INT NOT NULL,
+  collector_id INT NOT NULL,
+  status ENUM('pending', 'accepted', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
   collection_notes TEXT,
-  failure_reason TEXT,
+  cancellation_reason TEXT,
   waste_quantity_collected DECIMAL(10, 2),
   proof_photo VARCHAR(255),
   assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (pickup_request_id) REFERENCES pickup_requests(id) ON DELETE CASCADE,
-  FOREIGN KEY (company_id) REFERENCES waste_companies(id),
-  FOREIGN KEY (truck_id) REFERENCES trucks(id),
-  FOREIGN KEY (driver_id) REFERENCES users(id),
-  FOREIGN KEY (assigned_by) REFERENCES users(id)
+  FOREIGN KEY (collection_request_id) REFERENCES collection_requests(id) ON DELETE CASCADE,
+  FOREIGN KEY (collector_id) REFERENCES users(id)
 );
 
-CREATE TABLE pickup_feedback (
+CREATE TABLE collection_feedback (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  pickup_request_id INT NOT NULL,
-  customer_id INT NOT NULL,
+  collection_request_id INT NOT NULL,
+  client_id INT NOT NULL,
   rating INT NOT NULL,
   comment TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (pickup_request_id) REFERENCES pickup_requests(id) ON DELETE CASCADE,
-  FOREIGN KEY (customer_id) REFERENCES users(id)
+  FOREIGN KEY (collection_request_id) REFERENCES collection_requests(id) ON DELETE CASCADE,
+  FOREIGN KEY (client_id) REFERENCES users(id)
 );
 
 CREATE TABLE notifications (

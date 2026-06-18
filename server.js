@@ -5,10 +5,8 @@ require("dotenv").config();
 
 const authRoutes = require("./routes/authRoutes");
 const locationRoutes = require("./routes/locationRoutes");
-const pickupRoutes = require("./routes/pickupRoutes");
-const assignmentRoutes = require("./routes/assignmentRoutes");
-const companyRoutes = require("./routes/companyRoutes");
-const truckRoutes = require("./routes/truckRoutes");
+const collectionRoutes = require("./routes/collectionRoutes");
+const collectionAssignmentRoutes = require("./routes/collectionAssignmentRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const adminRoutes = require("./routes/adminRoutes");
@@ -45,10 +43,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/locations", locationRoutes);
-app.use("/api/pickups", pickupRoutes);
-app.use("/api/assignments", assignmentRoutes);
-app.use("/api/companies", companyRoutes);
-app.use("/api/trucks", truckRoutes);
+app.use("/api/collections", collectionRoutes);
+app.use("/api/assignments", collectionAssignmentRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/admin", adminRoutes);
