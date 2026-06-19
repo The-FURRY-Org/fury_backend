@@ -53,4 +53,4 @@ const sendNotification = async (req, res) => {
   }
 };
 
-module.exports = { getNotifications, markAsRead };
+module.exports = { getNotifications, markAsRead, sendNotification };
