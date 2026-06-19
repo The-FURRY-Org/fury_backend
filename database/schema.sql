@@ -104,12 +104,14 @@ CREATE TABLE collection_feedback (
 CREATE TABLE notifications (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
+  sender_id INT NULL,
   title VARCHAR(120) NOT NULL,
   message TEXT NOT NULL,
   status ENUM('unread', 'read') NOT NULL DEFAULT 'unread',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   read_at TIMESTAMP NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ,FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE audit_logs (
