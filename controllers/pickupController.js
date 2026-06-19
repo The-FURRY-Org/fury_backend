@@ -50,10 +50,10 @@ const getPickupById = async (req, res) => {
   const params = [req.params.id];
   let ownerClause = "";
 
-  if (req.user.role === "customer") {
+  if (req.user.role === "client") {
     ownerClause = "AND pr.customer_id = ?";
     params.push(req.user.id);
-  } else if (req.user.role === "driver") {
+  } else if (req.user.role === "collector") {
     ownerClause = "AND pa.driver_id = ?";
     params.push(req.user.id);
   }

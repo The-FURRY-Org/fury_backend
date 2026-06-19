@@ -36,11 +36,11 @@ const createTruck = async (req, res) => {
     let driverIdValue = null;
     if (driver_id !== undefined && driver_id !== null && driver_id !== "") {
       const [drivers] = await pool.query(
-        "SELECT id FROM users WHERE id = ? AND role = 'driver' AND status = 'active'",
+        "SELECT id FROM users WHERE id = ? AND role = 'collector' AND status = 'active'",
         [driver_id]
       );
       if (!drivers.length) {
-        return res.status(400).json({ message: "Driver ID must belong to an active driver" });
+        return res.status(400).json({ message: "Collector ID must belong to an active collector" });
       }
       driverIdValue = driver_id;
     }

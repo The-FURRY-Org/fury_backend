@@ -1,5 +1,5 @@
 const express = require("express");
-const { createCompany, getMyCompany, updateCompany, getCompanyCollectors, getCompanyCustomers, getCompanyDashboard, getCollectorLoginEvents, deleteDriver } = require("../controllers/companyController");
+const { createCompany, getMyCompany, updateCompany, getCompanyCollectors, getCompanyCustomers, getCompanyDashboard, getCollectorLoginEvents, deleteCollector } = require("../controllers/companyController");
 const { protect } = require("../middleware/authMiddleware");
 const { allowRoles } = require("../middleware/roleMiddleware");
 
@@ -14,6 +14,6 @@ router.get("/dashboard", getCompanyDashboard);
 router.get("/collectors", getCompanyCollectors);
 router.get("/customers", getCompanyCustomers);
 router.get("/collectors/logins", getCollectorLoginEvents);
-router.delete("/collectors/:id", deleteDriver);
+router.delete("/collectors/:id", deleteCollector);
 
 module.exports = router;

@@ -1,5 +1,5 @@
 {
-  "name": "cleantrack-backend",
+  "name": "ecocollect-backend",
   "version": "1.0.0",
   "description": "EcoCollect Express and MariaDB backend",
   "main": "server.js",

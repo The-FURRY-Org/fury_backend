@@ -43,13 +43,13 @@ DB_USER=root
 DB_PASSWORD=root
 ```
 
-`npm run db:setup` runs both `database/schema.sql` and `database/seed.sql`. The schema file recreates the `cleantrack_uganda` database, so do not run it against data you need to keep.
+`npm run db:setup` runs both `database/schema.sql` and `database/seed.sql`. The schema file recreates the `ecocollect_uganda` database, so do not run it against data you need to keep.
 
 Manual alternative:
 
 ```bash
 mysql -u your_user -p < database/schema.sql
-mysql -u your_user -p cleantrack_uganda < database/seed.sql
+mysql -u your_user -p ecocollect_uganda < database/seed.sql
 ```
 
 ## Environment Variables
@@ -116,7 +116,7 @@ Auth:
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 
-Customer locations:
+Client locations:
 
 - `POST /api/locations`
 - `GET /api/locations/my-locations`
@@ -124,7 +124,7 @@ Customer locations:
 - `PUT /api/locations/:id`
 - `DELETE /api/locations/:id`
 
-Pickup requests:
+Client pickup requests:
 
 - `POST /api/pickups`
 - `GET /api/pickups/my-requests`
@@ -135,7 +135,7 @@ Pickup requests:
 Assignments:
 
 - `POST /api/assignments`
-- `GET /api/assignments/driver/my-jobs`
+- `GET /api/assignments/my-assignments`
 - `GET /api/assignments/company/my-jobs`
 - `PUT /api/assignments/:id/status`
 - `PUT /api/assignments/:id/complete`
@@ -145,12 +145,7 @@ Companies, trucks, categories, feedback, and admin routes are implemented in the
 
 ## Default Accounts
 
-All seed accounts use password `password123`.
-
-- Admin: `admin@cleantrack.ug`
-- Customer: `customer@cleantrack.ug`
-- Driver: `driver1@cleantrack.ug`
-- Manager: `manager@greenroute.ug`
+All seed accounts use password `password123`. The seeded users are defined in `fury_backend/database/seed.sql`.
 
 ## JWT Authentication
 
@@ -158,11 +153,11 @@ When a user logs in, the backend signs a JWT containing the user id and role. Pr
 
 ## Role-Based Access Control
 
-`roleMiddleware.js` checks `req.user.role` before a request reaches a controller. For example, customers can report bins, drivers can update assigned jobs, managers can assign pickups, and admins can view system-wide records.
+`roleMiddleware.js` checks `req.user.role` before a request reaches a controller. For example, clients can report bins, collectors can update assigned jobs, managers can assign pickups, and admins can view system-wide records.
 
 ## Image Uploads
 
-Multer stores customer bin photos in `uploads/pickup-photos/` and driver proof photos in `uploads/proof-photos/`. The backend serves `/uploads` statically so React can display saved images.
+Multer stores client pickup photos in `uploads/pickup-photos/` and collector proof photos in `uploads/proof-photos/`. The backend serves `/uploads` statically so React can display saved images.
 
 ## How the Frontend Talks to the Backend
 

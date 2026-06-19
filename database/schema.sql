@@ -1,6 +1,6 @@
-DROP DATABASE IF EXISTS cleantrack_uganda;
-CREATE DATABASE cleantrack_uganda;
-USE cleantrack_uganda;
+DROP DATABASE IF EXISTS ecocollect_uganda;
+CREATE DATABASE ecocollect_uganda;
+USE ecocollect_uganda;
 
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,

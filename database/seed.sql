@@ -1,4 +1,4 @@
-USE cleantrack_uganda;
+USE ecocollect_uganda;
 
 -- All demo users use this password: password123
 SET @demo_password = '$2b$10$1itDutuxh3pi2lmMrdAd4.7HOwRS0phpwopISzr5zTXSjScRatOZq';

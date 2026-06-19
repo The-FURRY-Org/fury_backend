@@ -6,7 +6,7 @@ const mysql = require('mysql2/promise');
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'cleantrack_uganda'
+    database: process.env.DB_NAME || 'ecocollect_uganda'
   });
 
   const [rows] = await conn.query("SELECT id, client_id, status, description, requested_at FROM collection_requests WHERE client_id = ? ORDER BY requested_at DESC", [11]);
