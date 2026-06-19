@@ -11,7 +11,7 @@ const { allowRoles } = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
-router.use(protect, allowRoles("customer"));
+router.use(protect, allowRoles("client"));
 
 router.post("/", createLocation);
 router.get("/my-locations", getMyLocations);
